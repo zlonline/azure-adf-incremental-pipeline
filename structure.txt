@@ -19,3 +19,14 @@ azure-adf-incremental-pipeline/
 │   ├── dataset/
 │   ├── linkedService/
 │   └── trigger/
+│
+├── screenshots/
+│   ├── 01_pipeline_overview.png
+│   ├── 02_successful_run.png
+│   ├── 03_failure_handling.png
+│   ├── 04_monitoring.png
+│   └── 05_adls_parquet.png
+│
+└── docs/
+    ├── testing.md
+    └── troubleshooting.md
