@@ -1,0 +1,36 @@
+{
+    "name": "ds_adls_customers_incremental",
+    "properties": {
+        "linkedServiceName": {
+            "referenceName": "ls_adls_deproject",
+            "type": "LinkedServiceReference"
+        },
+        "parameters": {
+            "folder_name": {
+                "type": "string"
+            },
+            "file_name": {
+                "type": "string"
+            }
+        },
+        "annotations": [],
+        "type": "Parquet",
+        "typeProperties": {
+            "location": {
+                "type": "AzureBlobFSLocation",
+                "fileName": {
+                    "value": "@dataset().file_name",
+                    "type": "Expression"
+                },
+                "folderPath": {
+                    "value": "@dataset().folder_name",
+                    "type": "Expression"
+                },
+                "fileSystem": "raw"
+            },
+            "compressionCodec": "snappy"
+        },
+        "schema": []
+    },
+    "type": "Microsoft.DataFactory/factories/datasets"
+}

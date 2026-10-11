@@ -1,0 +1,17 @@
+{
+    "name": "ds_sqlserver_control",
+    "properties": {
+        "linkedServiceName": {
+            "referenceName": "ls_sqlserver_deproject",
+            "type": "LinkedServiceReference"
+        },
+        "annotations": [],
+        "type": "SqlServerTable",
+        "schema": [],
+        "typeProperties": {
+            "schema": "dbo",
+            "table": "pipeline_watermark"
+        }
+    },
+    "type": "Microsoft.DataFactory/factories/datasets"
+}

@@ -1,0 +1,225 @@
+{
+    "name": "pl_customer_incremental",
+    "properties": {
+        "activities": [
+            {
+                "name": "Get Old Watermark",
+                "type": "Lookup",
+                "dependsOn": [],
+                "policy": {
+                    "timeout": "0.12:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "source": {
+                        "type": "SqlServerSource",
+                        "sqlReaderQuery": {
+                            "value": "@concat(\n    'SELECT watermark_value FROM dbo.pipeline_watermark WHERE pipeline_name = ''',\n    pipeline().parameters.watermark_key,\n    ''''\n)",
+                            "type": "Expression"
+                        },
+                        "queryTimeout": "02:00:00",
+                        "partitionOption": "None"
+                    },
+                    "dataset": {
+                        "referenceName": "ds_sqlserver_customers",
+                        "type": "DatasetReference"
+                    }
+                }
+            },
+            {
+                "name": "Get New Watermark",
+                "type": "Lookup",
+                "dependsOn": [
+                    {
+                        "activity": "Get Old Watermark",
+                        "dependencyConditions": [
+                            "Completed"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "timeout": "0.12:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "source": {
+                        "type": "SqlServerSource",
+                        "sqlReaderQuery": {
+                            "value": "@concat(\n    'SELECT MAX(',\n    pipeline().parameters.watermark_column,\n    ') AS new_watermark FROM ',\n    pipeline().parameters.schema_name,\n    '.',\n    pipeline().parameters.table_name\n)",
+                            "type": "Expression"
+                        },
+                        "queryTimeout": "02:00:00",
+                        "partitionOption": "None"
+                    },
+                    "dataset": {
+                        "referenceName": "ds_sqlserver_control",
+                        "type": "DatasetReference"
+                    }
+                }
+            },
+            {
+                "name": "Copy Incremental Customers",
+                "type": "Copy",
+                "dependsOn": [
+                    {
+                        "activity": "Get New Watermark",
+                        "dependencyConditions": [
+                            "Completed"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "timeout": "0.12:00:00",
+                    "retry": 3,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "source": {
+                        "type": "SqlServerSource",
+                        "sqlReaderQuery": {
+                            "value": "@concat(\n    'SELECT * FROM ',\n    pipeline().parameters.schema_name,\n    '.',\n    pipeline().parameters.table_name,\n    ' WHERE ',\n    pipeline().parameters.watermark_column,\n    ' > ''',\n    activity('Get Old Watermark').output.firstRow.watermark_value,\n    ''' AND ',\n    pipeline().parameters.watermark_column,\n    ' <= ''',\n    activity('Get New Watermark').output.firstRow.new_watermark,\n    ''''\n)",
+                            "type": "Expression"
+                        },
+                        "queryTimeout": "02:00:00",
+                        "partitionOption": "None"
+                    },
+                    "sink": {
+                        "type": "ParquetSink",
+                        "storeSettings": {
+                            "type": "AzureBlobFSWriteSettings"
+                        },
+                        "formatSettings": {
+                            "type": "ParquetWriteSettings"
+                        }
+                    },
+                    "enableStaging": false,
+                    "translator": {
+                        "type": "TabularTranslator",
+                        "typeConversion": true,
+                        "typeConversionSettings": {
+                            "allowDataTruncation": true,
+                            "treatBooleanAsNumber": false
+                        }
+                    }
+                },
+                "inputs": [
+                    {
+                        "referenceName": "ds_sqlserver_control",
+                        "type": "DatasetReference"
+                    }
+                ],
+                "outputs": [
+                    {
+                        "referenceName": "ds_adls_customers_incremental",
+                        "type": "DatasetReference",
+                        "parameters": {
+                            "folder_name": {
+                                "value": "@concat(\n    pipeline().parameters.table_name,\n    '/year=',\n    formatDateTime(utcNow(),'yyyy'),\n    '/month=',\n    formatDateTime(utcNow(),'MM'),\n    '/day=',\n    formatDateTime(utcNow(),'dd')\n)",
+                                "type": "Expression"
+                            },
+                            "file_name": {
+                                "value": "@concat(\n    pipeline().parameters.table_name,\n    '_',\n    pipeline().RunId,\n    '.parquet'\n)",
+                                "type": "Expression"
+                            }
+                        }
+                    }
+                ]
+            },
+            {
+                "name": "Update Watermark",
+                "type": "SqlServerStoredProcedure",
+                "dependsOn": [
+                    {
+                        "activity": "Copy Incremental Customers",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "timeout": "0.12:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "storedProcedureName": "[dbo].[usp_update_pipeline_watermark]",
+                    "storedProcedureParameters": {
+                        "new_watermark": {
+                            "value": {
+                                "value": "@activity('Get New Watermark').output.firstRow.new_watermark",
+                                "type": "Expression"
+                            },
+                            "type": "DateTime"
+                        },
+                        "pipeline_name": {
+                            "value": {
+                                "value": "@pipeline().parameters.watermark_key",
+                                "type": "Expression"
+                            },
+                            "type": "String"
+                        }
+                    }
+                },
+                "linkedServiceName": {
+                    "referenceName": "ls_sqlserver_deproject",
+                    "type": "LinkedServiceReference"
+                }
+            },
+            {
+                "name": "Fail Customer Pipeline",
+                "type": "Fail",
+                "dependsOn": [
+                    {
+                        "activity": "Copy Incremental Customers",
+                        "dependencyConditions": [
+                            "Failed"
+                        ]
+                    }
+                ],
+                "userProperties": [],
+                "typeProperties": {
+                    "message": {
+                        "value": "@concat(     'Incremental Copy failed. Pipeline Run ID: ',     pipeline().RunId )",
+                        "type": "Expression"
+                    },
+                    "errorCode": "CUSTOMER_COPY_FAILED"
+                }
+            }
+        ],
+        "parameters": {
+            "schema_name": {
+                "type": "string",
+                "defaultValue": "dbo"
+            },
+            "table_name": {
+                "type": "string",
+                "defaultValue": "customers"
+            },
+            "watermark_column": {
+                "type": "string",
+                "defaultValue": "updated_at"
+            },
+            "watermark_key": {
+                "type": "string",
+                "defaultValue": "customer_pipeline"
+            }
+        },
+        "annotations": [],
+        "lastPublishTime": "2026-10-09T13:58:31Z"
+    },
+    "type": "Microsoft.DataFactory/factories/pipelines"
+}

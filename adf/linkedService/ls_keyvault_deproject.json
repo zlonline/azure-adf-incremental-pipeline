@@ -1,0 +1,10 @@
+{
+    "name": "ls_keyvault_deproject",
+    "properties": {
+        "annotations": [],
+        "type": "AzureKeyVault",
+        "typeProperties": {
+            "baseUrl": "https://kv-de-project-123.vault.azure.net/"
+        }
+    }
+}

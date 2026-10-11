@@ -1,0 +1,28 @@
+{
+    "name": "ls_sqlserver_deproject",
+    "properties": {
+        "annotations": [],
+        "type": "SqlServer",
+        "typeProperties": {
+            "server": "nrt-dev-dt007.nrttech.com",
+            "database": "Datatest",
+            "encrypt": "optional",
+            "trustServerCertificate": true,
+            "authenticationType": "SQL",
+            "userName": "rzhong",
+            "password": {
+                "type": "AzureKeyVaultSecret",
+                "store": {
+                    "referenceName": "ls_keyvault_deproject",
+                    "type": "LinkedServiceReference"
+                },
+                "secretName": "sql-server-password"
+            }
+        },
+        "connectVia": {
+            "referenceName": "irsqlserverlocal",
+            "type": "IntegrationRuntimeReference"
+        }
+    },
+    "type": "Microsoft.DataFactory/factories/linkedservices"
+}

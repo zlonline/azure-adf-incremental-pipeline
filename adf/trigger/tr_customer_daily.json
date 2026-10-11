@@ -1,0 +1,38 @@
+{
+    "name": "tr_customer_daily",
+    "properties": {
+        "annotations": [],
+        "runtimeState": "Stopped",
+        "pipelines": [
+            {
+                "pipelineReference": {
+                    "referenceName": "pl_customer_incremental",
+                    "type": "PipelineReference"
+                },
+                "parameters": {
+                    "schema_name": "dbo",
+                    "table_name": "customers",
+                    "watermark_column": "updated_at",
+                    "watermark_key": "customer_pipeline"
+                }
+            }
+        ],
+        "type": "ScheduleTrigger",
+        "typeProperties": {
+            "recurrence": {
+                "frequency": "Day",
+                "interval": 1,
+                "startTime": "2026-10-09T13:04:00",
+                "timeZone": "Eastern Standard Time",
+                "schedule": {
+                    "minutes": [
+                        0
+                    ],
+                    "hours": [
+                        2
+                    ]
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,21 @@
+azure-adf-incremental-pipeline/
+│
+├── README.md
+│
+├── architecture/
+│   └── pipeline-architecture.png
+│
+├── sql/
+│   ├── 01_create_customers.sql
+│   ├── 02_create_watermark.sql
+│   ├── 03_update_watermark_sp.sql
+│   └── 04_validation_queries.sql
+│
+├── adf/
+│   ├── pipeline/
+│   │   ├── pl_customer_full_load.json
+│   │   └── pl_customer_incremental.json
+│   │
+│   ├── dataset/
+│   ├── linkedService/
+│   └── trigger/

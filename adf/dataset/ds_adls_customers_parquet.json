@@ -1,0 +1,22 @@
+{
+    "name": "ds_adls_customers_parquet",
+    "properties": {
+        "linkedServiceName": {
+            "referenceName": "ls_adls_deproject",
+            "type": "LinkedServiceReference"
+        },
+        "annotations": [],
+        "type": "Parquet",
+        "typeProperties": {
+            "location": {
+                "type": "AzureBlobFSLocation",
+                "fileName": "customers.parquet",
+                "folderPath": "customers",
+                "fileSystem": "raw"
+            },
+            "compressionCodec": "snappy"
+        },
+        "schema": []
+    },
+    "type": "Microsoft.DataFactory/factories/datasets"
+}
